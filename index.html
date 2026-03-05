@@ -5,23 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KEPCO 자재센터 차량 예약시스템</title>
   <style>
-    /* 화면 여백을 없애고 예약창이 꽉 차도록 설정합니다. */
-    body, html { 
-      margin: 0; 
-      padding: 0; 
-      height: 100%; 
-      width: 100%;
-      overflow: hidden; 
-    }
-    /* 구글 앱 스크립트 화면을 불러오는 창문(iframe) 설정입니다. */
-    iframe { 
-      width: 100%; 
-      height: 100vh; 
-      border: none; 
-    }
+    body { background-color: #f4f7f9; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; border-top: 5px solid #004795; max-width: 400px; }
+    .logo { height: 40px; margin-bottom: 20px; }
+    h2 { color: #004795; margin-bottom: 10px; font-size: 1.4rem; }
+    p { color: #666; font-size: 0.95rem; line-height: 1.5; margin-bottom: 30px; }
+    .btn { background-color: #004795; color: white; text-decoration: none; padding: 15px 30px; border-radius: 12px; font-weight: 700; display: inline-block; transition: 0.3s; border: none; cursor: pointer; font-size: 1.1rem; }
+    .btn:hover { background-color: #003570; transform: translateY(-2px); }
   </style>
 </head>
 <body>
-  <iframe src="https://script.google.com/macros/s/AKfycbwWk1poLg7pdzdDabYWwzZnklhcoouZTiX2xwmWUxJ7FSt-jt-atXagKD0j84k_P_o/exec"></iframe>
+  <div class="card">
+    <img src="https://lh3.googleusercontent.com/d/196cwAcdh72FSYj38Lj5g9mS2rSZ12vXQ" class="logo" alt="KEPCO">
+    <h2>차량 예약 시스템</h2>
+    <p>본부 자재센터 불용자재 환입을 위한<br>차량 예약 시스템에 접속합니다.</p>
+    <a href="https://script.google.com/macros/s/AKfycbwWk1poLg7pdzdDabYWwzZnklhcoouZTiX2xwmWUxJ7FSt-jt-atXagKD0j84k_P_o/exec" class="btn">시스템 접속하기</a>
+  </div>
 </body>
 </html>
