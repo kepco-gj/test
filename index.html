@@ -1,25 +1,276 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KEPCO 자재센터 차량 예약시스템</title>
+  <base target="_top">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
   <style>
-    body { background-color: #f4f7f9; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-    .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; border-top: 5px solid #004795; max-width: 400px; }
-    .logo { height: 40px; margin-bottom: 20px; }
-    h2 { color: #004795; margin-bottom: 10px; font-size: 1.4rem; }
-    p { color: #666; font-size: 0.95rem; line-height: 1.5; margin-bottom: 30px; }
-    .btn { background-color: #004795; color: white; text-decoration: none; padding: 15px 30px; border-radius: 12px; font-weight: 700; display: inline-block; transition: 0.3s; border: none; cursor: pointer; font-size: 1.1rem; }
-    .btn:hover { background-color: #003570; transform: translateY(-2px); }
+    :root { --kepco-blue: #004795; --kepco-orange: #ff6600; }
+    body { background-color: #f4f7f9; font-family: 'Pretendard', sans-serif; margin: 0; padding: 0; color: #333; }
+    
+    /* 1. 와이드 헤더: 전체 너비 확장 및 요소 배치 */
+    .top-header { 
+      background: white; 
+      border-bottom: 3px solid var(--kepco-blue); 
+      padding: 12px 4%; 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      width: 100%;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    
+    .header-left { display: flex; align-items: center; }
+    .kepco-logo { height: 35px; margin-right: 18px; }
+    .system-name { 
+      color: var(--kepco-blue); 
+      font-weight: 800; 
+      font-size: 1.35rem; 
+      margin: 0; 
+      border-left: 2px solid #eee; 
+      padding-left: 18px;
+    }
+
+    .admin-link {
+      text-decoration: none;
+      color: #6c757d;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: 0.2s;
+    }
+    .admin-link:hover { color: var(--kepco-blue); }
+
+    /* 2. 컨텐츠 영역 및 성공 화면 디자인 */
+    .container { max-width: 850px; margin-top: 40px; margin-bottom: 80px; }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,71,149,0.08); overflow: hidden; }
+    .card-header { background: #f8f9fa; border-bottom: 1px solid #eee; padding: 18px; font-weight: 700; color: #555; }
+    
+    .form-label { font-weight: 700; color: #444; margin-bottom: 8px; font-size: 0.95rem; }
+    .btn-primary { background-color: var(--kepco-blue); border: none; padding: 16px; font-weight: 700; font-size: 1.15rem; border-radius: 12px; transition: 0.3s; }
+    .btn-primary:hover { background-color: #003366; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,71,149,0.2); }
+    
+    /* 로딩 오버레이 */
+    .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
+    
+    .safety-box { background-color: #fff9f0; border: 1px solid #ffeeba; border-radius: 10px; padding: 20px; }
+    
+    /* 성공 화면 스타일 */
+    #success-container { display: none; }
+    .success-icon { font-size: 5rem; color: #2ecc71; margin-bottom: 20px; }
+
+    @media (max-width: 768px) {
+      .system-name { font-size: 1rem; padding-left: 10px; margin-left: 10px; }
+      .kepco-logo { height: 25px; }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <img src="https://lh3.googleusercontent.com/d/196cwAcdh72FSYj38Lj5g9mS2rSZ12vXQ" class="logo" alt="KEPCO">
-    <h2>차량 예약 시스템</h2>
-    <p>본부 자재센터 불용자재 환입을 위한<br>차량 예약 시스템에 접속합니다.</p>
-    <a href="https://script.google.com/macros/s/AKfycbwWk1poLg7pdzdDabYWwzZnklhcoouZTiX2xwmWUxJ7FSt-jt-atXagKD0j84k_P_o/exec" class="btn">시스템 접속하기</a>
+
+  <div id="loader" class="loading-overlay">
+    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+    <div class="fw-bold text-primary">예약 정보를 안전하게 처리 중입니다...</div>
   </div>
+
+  <header class="top-header">
+    <div class="header-left">
+      <img src="https://lh3.googleusercontent.com/d/196cwAcdh72FSYj38Lj5g9mS2rSZ12vXQ" class="kepco-logo" alt="KEPCO">
+      <h1 class="system-name">자재센터 불용자재 환입차량 예약시스템</h1>
+    </div>
+    <div>
+      <a href="<?= ScriptApp.getService().getUrl() ?>?mode=admin" class="admin-link">
+        <span>🔒 관리자 인증</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <div id="form-section">
+      <div class="alert alert-primary border-0 shadow-sm mb-4 d-flex align-items-center">
+        <span class="me-2">💡</span>
+        <div>
+          <strong>안내:</strong> 현장 내 <strong>교통사고 예방 및 안전한 자재 하역 환경 조성</strong>을 위해 예약 시간을 엄수해 주세요. (타임당 최대 2대)
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header text-center">방문 예약 신청서</div>
+        <div class="card-body p-4 p-md-5">
+          <form id="resForm">
+            <div class="row g-4">
+              <div class="col-md-6">
+                <label class="form-label">📅 방문 예약일</label>
+                <input type="date" id="date" name="date" class="form-control form-control-lg" required onchange="updateSlots()">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">⏰ 방문 시간 (30분 단위)</label>
+                <select id="time" name="time" class="form-select form-select-lg" required>
+                  <option value="">날짜를 먼저 선택하세요</option>
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">🏢 업체명</label>
+                <input type="text" name="company" class="form-control" placeholder="정식 업체명을 입력하세요" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">📞 신청자 연락처</label>
+                <input type="tel" name="contact" class="form-control" placeholder="010-0000-0000" required>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">🚛 차량번호 1 (필수)</label>
+                <input type="text" name="car1" class="form-control" placeholder="예: 12가 3456" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">🚛 차량번호 2 (동시 진입 시)</label>
+                <input type="text" name="car2" class="form-control" placeholder="추가 차량이 없으면 비워두세요">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">📦 환입 자재 종류 및 예상 수량</label>
+                <textarea name="material" class="form-control" rows="2" placeholder="예: 폐변압기 5대, 폐전선 200kg 등" required></textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label">👥 출입 인원 정보</label>
+                <input type="text" name="people" class="form-control" placeholder="예: 총 2명 (홍길동, 이철수)" required>
+              </div>
+
+              <div class="col-12"><hr class="my-3"></div>
+
+              <div class="col-12">
+                <h6 class="fw-bold mb-3">🛡️ 안전 관련 필수 서류 첨부 (3종 모두 필수)</h6>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="small text-muted mb-1">안전수칙 준수 동의서 1</label>
+                    <input type="file" id="f1" class="form-control" required accept=".pdf,image/*">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="small text-muted mb-1">안전수칙 준수 동의서 2</label>
+                    <input type="file" id="f2" class="form-control" required accept=".pdf,image/*">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="small text-muted mb-1">안전수칙 준수 동의서 3</label>
+                    <input type="file" id="f3" class="form-control" required accept=".pdf,image/*">
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12 mt-4">
+                <div class="safety-box">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="safetyCheck" required>
+                    <label class="form-check-label fw-bold text-danger" for="safetyCheck">
+                      본인은 자재센터 내 안전 수칙을 확인하였으며, 작업 시 이를 철저히 준수할 것에 동의합니다.
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <button type="button" id="submitBtn" onclick="handleFormSubmit()" class="btn btn-primary w-100 mt-2 shadow-sm">
+                  예약 신청 완료하기
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="success-section" class="text-center" style="display: none;">
+      <div class="card p-5">
+        <div class="success-icon">✅</div>
+        <h2 class="fw-bold text-primary mb-3">예약 신청이 접수되었습니다!</h2>
+        <p class="text-muted mb-4 fs-5">
+          입력하신 연락처로 담당자의 검토 결과(승인/반려)가 안내될 예정입니다.<br>
+          안전한 작업을 위해 배정된 예약 시간을 반드시 지켜 주시기 바랍니다.
+        </p>
+        <button type="button" onclick="location.reload()" class="btn btn-primary px-5">
+          새로운 예약 신청하기
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const loader = document.getElementById('loader');
+
+    // [1] 날짜 선택 시 예약 가능 시간대 업데이트
+    function updateSlots() {
+      const date = document.getElementById('date').value;
+      const timeSelect = document.getElementById('time');
+      timeSelect.innerHTML = '<option>예약 현황 조회 중...</option>';
+      
+      google.script.run
+        .withSuccessHandler(slots => {
+          if (slots.length === 0) {
+            timeSelect.innerHTML = '<option value="">해당 날짜는 예약이 마감되었습니다</option>';
+          } else {
+            timeSelect.innerHTML = slots.map(s => `<option value="${s}">${s}</option>`).join('');
+          }
+        })
+        .withFailureHandler(err => {
+          alert("데이터 오류: " + err.message);
+        })
+        .getAvailableSlots(date);
+    }
+
+    // [2] 폼 제출 처리
+    async function handleFormSubmit() {
+      const form = document.getElementById('resForm');
+      if(!form.checkValidity()) { form.reportValidity(); return; }
+
+      loader.style.display = 'flex';
+      
+      const fileToBase64 = file => new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({
+          data: reader.result.split(',')[1],
+          mimeType: file.type,
+          name: file.name
+        });
+        reader.readAsDataURL(file);
+      });
+
+      try {
+        const payload = {
+          date: form.date.value,
+          time: form.time.value,
+          company: form.company.value,
+          contact: form.contact.value,
+          car1: form.car1.value,
+          car2: form.car2.value,
+          material: form.material.value,
+          people: form.people.value,
+          file1: await fileToBase64(document.getElementById('f1').files[0]),
+          file2: await fileToBase64(document.getElementById('f2').files[0]),
+          file3: await fileToBase64(document.getElementById('f3').files[0])
+        };
+
+        google.script.run
+          .withSuccessHandler(msg => {
+            loader.style.display = 'none';
+            // 화면 전환 로직 (흰 화면 방지)
+            document.getElementById('form-section').style.display = 'none';
+            document.getElementById('success-section').style.display = 'block';
+            window.scrollTo(0, 0);
+          })
+          .withFailureHandler(err => {
+            loader.style.display = 'none';
+            alert("신청 오류: " + err.message);
+          })
+          .submitReservation(payload);
+          
+      } catch (e) {
+        loader.style.display = 'none';
+        alert("파일 처리 중 오류가 발생했습니다.");
+      }
+    }
+  </script>
 </body>
 </html>
