@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/ko.global.min.js'></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  
+  <style>
+    :root { --kepco-blue: #004795; --bg-gray: #f4f7f9; }
+    body { background-color: var(--bg-gray); font-family: 'Pretendard', sans-serif; margin: 0; padding: 0; color: #333; }
+    
+    /* 1. 상단 와이드 헤더 스타일 */
+    .top-header { 
+      background: white; 
+      border-bottom: 3px solid var(--kepco-blue); 
+      padding: 12px 4%; 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      width: 100%;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .header-left { display: flex; align-items: center; }
+    .kepco-logo { height: 35px; margin-right: 18px; }
+    .system-name { color: var(--kepco-blue); font-weight: 800; font-size: 1.35rem; margin: 0; border-left: 2px solid #eee; padding-left: 18px; }
+    .user-link { text-decoration: none; color: #6c757d; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; transition: 0.2s; }
+    .user-link:hover { color: var(--kepco-blue); }
+
+    /* 2. 로그인 섹션 */
+    #login-box { background: white; padding: 45px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); text-align: center; margin: 100px auto; max-width: 420px; }
+    .btn-login { background: var(--kepco-blue); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; width: 100%; font-size: 1.1rem; }
+    input[type="password"] { padding: 14px; border: 1px solid #ddd; border-radius: 12px; margin-bottom: 25px; width: 100%; text-align: center; font-size: 1.1rem; }
+
+    /* 3. 캘린더 컨테이너 커스텀 */
+    #calendar-container { display: none; width: 94%; max-width: 1300px; margin: 40px auto; }
+    #calendar { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 45px rgba(0,71,149,0.08); border: none; }
+
+    /* 4. FullCalendar 디자인 오버라이드 */
+    .fc-daygrid-day-number { color: #444 !important; text-decoration: none !important; font-weight: 600; padding: 8px !important; }
+    .fc-day-sun .fc-daygrid-day-number { color: #e74c3c !important; } 
+    .fc-day-sat .fc-daygrid-day-number { color: #3498db !important; } 
+    .fc-col-header-cell { background: #f8f9fa; padding: 12px 0 !important; }
+    .fc-col-header-cell-cushion { color: #555 !important; text-decoration: none !important; font-weight: 700; }
+    .fc-toolbar-title { font-weight: 800 !important; color: var(--kepco-blue); font-size: 1.6rem !important; }
+    .fc-button-primary { background-color: white !important; border: 1px solid #ddd !important; color: #555 !important; font-weight: 600 !important; text-transform: capitalize !important; }
+    .fc-button-active { background-color: var(--kepco-blue) !important; color: white !important; border-color: var(--kepco-blue) !important; }
+    .fc-day-today { background-color: rgba(0, 71, 149, 0.03) !important; }
+    .fc-event { border: none !important; padding: 3px 6px !important; border-radius: 5px !important; font-size: 0.85rem !important; font-weight: 600 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; }
+
+    .admin-header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 0 5px; }
+
+    /* 모달 커스텀 스타일 */
+    .modal-content { border-radius: 20px; border: none; }
+    .modal-header { background-color: #f8f9fa; border-bottom: 1px solid #eee; border-radius: 20px 20px 0 0; }
+    .detail-label { font-size: 0.85rem; color: #888; font-weight: 600; margin-bottom: 2px; }
+    .detail-value { font-size: 1rem; color: #333; font-weight: 700; margin-bottom: 15px; }
+    .doc-link { text-decoration: none; display: flex; align-items: center; padding: 10px; border-radius: 10px; background: #f0f4f8; color: var(--kepco-blue); font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
+    .doc-link:hover { background: #e2e8f0; }
+  </style>
+</head>
+<body>
+
+  <header class="top-header">
+    <div class="header-left">
+      <img src="https://lh3.googleusercontent.com/d/196cwAcdh72FSYj38Lj5g9mS2rSZ12vXQ" class="kepco-logo" alt="KEPCO">
+      <h1 class="system-name">자재센터 불용자재 환입차량 예약시스템</h1>
+    </div>
+    <div>
+      <a href="index.html" class="user-link">
+        <span>🏠 사용자 페이지로 이동</span>
+      </a>
+    </div>
+  </header>
+
+  <div id="login-box">
+    <h4 class="fw-bold mb-3">관리자 인증</h4>
+    <p class="text-muted small mb-4">보안을 위해 관리자 암호를 입력해 주세요.</p>
+    <input type="password" id="adminPw" placeholder="Access Password">
+    <button class="btn-login shadow-sm" onclick="attemptLogin()">현황 대시보드 접속</button>
+  </div>
+
+  <div id="calendar-container">
+    <div class="admin-header-area">
+      <h4 class="fw-bold m-0" style="color:var(--kepco-blue)">📅 차량 예약 통합 관리</h4>
+      <div class="d-flex gap-2">
+        <span class="badge rounded-pill px-3 py-2" style="background-color: #004795">🔵 승인완료</span>
+        <span class="badge rounded-pill px-3 py-2 text-dark" style="background-color: #f39c12">🟡 승인대기</span>
+        <span class="badge rounded-pill px-3 py-2" style="background-color: #e74c3c">🔴 반려</span>
+      </div>
+    </div>
+    <div id='calendar'></div>
+  </div>
+
+  <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content shadow-lg">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold text-primary" id="modalTitle">상세 예약 정보</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4" id="modalBody">
+          <div class="row">
+            <div class="col-6">
+              <div class="detail-label">방문 시간</div>
+              <div class="detail-value" id="viewTime">-</div>
+            </div>
+            <div class="col-6">
+              <div class="detail-label">상태</div>
+              <div class="detail-value"><span class="badge" id="viewStatus">-</span></div>
+            </div>
+            <div class="col-12">
+              <div class="detail-label">차량 정보</div>
+              <div class="detail-value" id="viewCars">-</div>
+            </div>
+            <div class="col-12">
+              <div class="detail-label">환입 자재 내역</div>
+              <div class="detail-value" id="viewMaterial">-</div>
+            </div>
+            <div class="col-6">
+              <div class="detail-label">신청자 연락처</div>
+              <div class="detail-value" id="viewContact">-</div>
+            </div>
+            <div class="col-6">
+              <div class="detail-label">출입 인원</div>
+              <div class="detail-value" id="viewPeople">-</div>
+            </div>
+            <div class="col-12 mt-2">
+              <div class="detail-label mb-2">첨부 서류 (클릭 시 새 창)</div>
+              <div class="d-grid gap-2" id="viewFiles"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary w-100 fw-bold py-2" data-bs-dismiss="modal">닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script>
+    const resModal = new bootstrap.Modal(document.getElementById('eventModal'));
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function formatPhoneNumber(num) {
+      if (!num) return "-";
+      const cleaned = ('' + num).replace(/\D/g, '');
+      const match = cleaned.match(/^(\d{3})(\d{3,4})(\d{4})$/);
+      if (match) return [match[1], match[2], match[3]].join('-');
+      return num;
+    }
+
+    function attemptLogin() {
+      const pw = document.getElementById('adminPw').value;
+      if (pw === ADMIN_PASSWORD) {
+        document.getElementById('login-box').style.display = 'none';
+        document.getElementById('calendar-container').style.display = 'block';
+        initCalendar();
+      } else {
+        alert("암호가 일치하지 않습니다.");
+      }
+    }
+
+    function initCalendar() {
+      const calendarEl = document.getElementById('calendar');
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+        locale: 'ko',
+        eventOrder: 'start',
+        dayMaxEvents: true,
+        events: async function(info, successCallback, failureCallback) {
+          const { data, error } = await supabase
+            .from('reservations')
+            .select('id, date, time, company, car1, car2, material, contact, people, file1_url, file2_url, file3_url, status')
+            .neq('status', '반려');
+          if (error) {
+            alert("데이터 로드 오류: " + error.message);
+            failureCallback(error);
+            return;
+          }
+          const events = (data || []).map(row => {
+            const dateStr = (row.date && String(row.date).substring(0, 10)) || '';
+            const timeStr = (row.time && String(row.time).trim().substring(0, 5)) || '09:00';
+            const startISO = dateStr + 'T' + timeStr + ':00';
+            return {
+              id: row.id,
+              title: row.company,
+              start: startISO,
+              color: row.status === '승인' ? '#004795' : '#f39c12',
+              extendedProps: {
+                company: row.company,
+                cars: [row.car1, row.car2].filter(Boolean).join(' / '),
+                material: row.material,
+                contact: row.contact,
+                people: row.people,
+                status: row.status || '대기',
+                files: [row.file1_url, row.file2_url, row.file3_url]
+              }
+            };
+          });
+          successCallback(events);
+        },
+        eventClick: function(info) {
+          const p = info.event.extendedProps;
+          const status = p.status || '대기';
+          const timeValue = info.event.startStr && info.event.startStr.includes('T')
+            ? info.event.startStr.split('T')[1].substring(0, 5) : '-';
+          document.getElementById('modalTitle').innerText = `[${p.company}] 예약 정보`;
+          document.getElementById('viewTime').innerText = timeValue;
+          document.getElementById('viewCars').innerText = p.cars || '-';
+          document.getElementById('viewMaterial').innerText = p.material || '-';
+          document.getElementById('viewContact').innerText = formatPhoneNumber(p.contact);
+          document.getElementById('viewPeople').innerText = p.people || '-';
+          const statusBadge = document.getElementById('viewStatus');
+          statusBadge.innerText = status;
+          statusBadge.className = 'badge ' + (status === '승인' ? 'bg-primary' : (status === '반려' ? 'bg-danger' : 'bg-warning text-dark'));
+          const fileContainer = document.getElementById('viewFiles');
+          fileContainer.innerHTML = '';
+          const fileNames = ['안전수칙 동의서 1', '안전수칙 동의서 2', '안전수칙 동의서 3'];
+          (p.files || []).forEach((url, idx) => {
+            if (url) {
+              const a = document.createElement('a');
+              a.href = url;
+              a.target = '_blank';
+              a.rel = 'noopener';
+              a.className = 'doc-link';
+              a.innerHTML = `<span>📄 ${fileNames[idx]}</span> <span class="ms-auto">↗</span>`;
+              fileContainer.appendChild(a);
+            }
+          });
+          resModal.show();
+        }
+      });
+      calendar.render();
+    }
+
+    document.getElementById('adminPw').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') attemptLogin();
+    });
+  </script>
+</body>
+</html>
