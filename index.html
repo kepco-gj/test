@@ -57,6 +57,49 @@
     .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
     
     .safety-box { background-color: #fff9f0; border: 1px solid #ffeeba; border-radius: 10px; padding: 20px; }
+
+    /* 인라인 달력: 처음부터 표시, KEPCO 톤 */
+    .calendar-wrap { background: #fff; border-radius: 16px; padding: 0; box-shadow: 0 4px 20px rgba(0,71,149,0.08); border: 1px solid #e2e8f0; overflow: hidden; }
+    .calendar-wrap .cal-header { background: var(--kepco-blue); color: #fff; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
+    .calendar-wrap .cal-title { font-weight: 700; font-size: 1.05rem; }
+    .calendar-wrap .cal-nav { display: flex; gap: 8px; }
+    .calendar-wrap .cal-nav-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1rem; line-height: 1; transition: 0.2s; }
+    .calendar-wrap .cal-nav-btn:hover { background: rgba(255,255,255,0.35); }
+    .calendar-wrap .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding: 10px 12px 4px; background: #f8f9fa; font-size: 0.75rem; font-weight: 700; color: #555; text-align: center; }
+    .calendar-wrap .cal-weekdays span:nth-child(1) { color: #e74c3c; }
+    .calendar-wrap .cal-weekdays span:nth-child(7) { color: #3498db; }
+    .calendar-wrap .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 8px 12px 16px; }
+    .calendar-wrap .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 600; color: #333; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+    .calendar-wrap .cal-day.other-month { color: #bbb; }
+    .calendar-wrap .cal-day.today { background: rgba(0,71,149,0.1); color: var(--kepco-blue); }
+    .calendar-wrap .cal-day:hover:not(.other-month):not(.disabled) { background: rgba(0,71,149,0.12); color: var(--kepco-blue); }
+    .calendar-wrap .cal-day.selected { background: var(--kepco-blue); color: #fff; }
+    .calendar-wrap .cal-day.disabled { color: #ccc; cursor: not-allowed; }
+    .calendar-wrap .cal-day.sun { color: #e74c3c; }
+    .calendar-wrap .cal-day.sun.other-month { color: #e8b4b4; }
+    .calendar-wrap .cal-day.sat { color: #3498db; }
+    .calendar-wrap .cal-day.sat.other-month { color: #b4d4e8; }
+
+    /* 시간 선택 카드: KEPCO 블루 톤으로 통일 */
+    .time-select-card { background: #f0f4fa; border-radius: 16px; padding: 20px; margin-bottom: 0; box-shadow: 0 2px 12px rgba(0,71,149,0.06); border: 1px solid #dde4ef; min-height: 140px; display: flex; flex-direction: column; }
+    .time-select-card .time-select-title { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--kepco-blue); font-size: 1rem; margin-bottom: 4px; }
+    .time-select-card .time-select-title .clock-icon { color: var(--kepco-blue); font-size: 1.1rem; }
+    .time-select-card .time-select-date { color: #555; font-size: 0.85rem; margin-bottom: 12px; min-height: 1.2em; }
+    .time-slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; min-height: 44px; }
+    .time-select-placeholder { color: #6c757d; font-size: 0.9rem; padding: 12px 0; text-align: center; grid-column: 1 / -1; }
+    .time-slot-btn { background: #e2e8f2; color: #333; border: 1px solid #d0d8e4; border-radius: 12px; padding: 12px 16px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: 0.2s; }
+    .time-slot-btn:hover { background: #c9d4e6; border-color: var(--kepco-blue); color: var(--kepco-blue); }
+    .time-slot-btn.selected { background: var(--kepco-blue); color: #fff; border-color: var(--kepco-blue); }
+    .time-slot-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    @media (max-width: 576px) { .time-slots-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    /* 달력·시간선택 같은 줄: 위아래 맞춤 (오른쪽에 라벨 높이만큼 여백) */
+    .row.date-time-row { align-items: stretch; }
+    .row.date-time-row .col-md-5 { display: flex; flex-direction: column; }
+    .row.date-time-row .col-md-5 .calendar-wrap { flex: 1; min-height: 280px; }
+    .row.date-time-row .col-md-7 { display: flex; flex-direction: column; }
+    .row.date-time-row .col-md-7 .date-time-row-spacer { visibility: hidden; margin-bottom: 8px; height: auto; }
+    .row.date-time-row .col-md-7 .time-select-card { flex: 1; min-height: 280px; }
     
     /* 성공 화면 스타일 */
     #success-container { display: none; }
@@ -101,16 +144,35 @@
         <div class="card-header text-center">방문 예약 신청서</div>
         <div class="card-body p-4 p-md-5">
           <form id="resForm">
-            <div class="row g-4">
-              <div class="col-md-6">
+            <div class="row g-4 date-time-row">
+              <div class="col-md-5">
                 <label class="form-label">📅 방문 예약일</label>
-                <input type="date" id="date" name="date" class="form-control form-control-lg" required onchange="updateSlots()">
+                <input type="hidden" id="date" name="date" required>
+                <div id="inlineCalendar" class="calendar-wrap">
+                  <div class="cal-header">
+                    <span class="cal-title" id="calTitle">2026년 3월</span>
+                    <div class="cal-nav">
+                      <button type="button" class="cal-nav-btn" id="calPrev" aria-label="이전 달">‹</button>
+                      <button type="button" class="cal-nav-btn" id="calNext" aria-label="다음 달">›</button>
+                    </div>
+                  </div>
+                  <div class="cal-weekdays">
+                    <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+                  </div>
+                  <div class="cal-days" id="calDays"></div>
+                </div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">⏰ 방문 시간 (30분 단위)</label>
-                <select id="time" name="time" class="form-select form-select-lg" required>
-                  <option value="">날짜를 먼저 선택하세요</option>
-                </select>
+              <div class="col-md-7">
+                <label class="form-label date-time-row-spacer" aria-hidden="true">📅 방문 예약일</label>
+                <div id="time-select-wrap" class="time-select-card">
+                  <div class="time-select-title"><span class="clock-icon">🕐</span> 시간 선택</div>
+                  <div class="time-select-date" id="timeSelectDate">달력에서 방문 예약일을 선택하면 예약 가능한 시간이 표시됩니다</div>
+                  <div class="time-slots-grid" id="timeSlots">
+                    <span class="time-select-placeholder col-12">← 왼쪽 달력에서 방문 예약일을 선택해 주세요</span>
+                  </div>
+                  <p class="text-muted small mt-2 mb-0" id="timeSelectHint"></p>
+                </div>
+                <input type="hidden" id="time" name="time" required>
               </div>
 
               <div class="col-md-6">
@@ -201,48 +263,186 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
   <script>
+    (function () {
     const loader = document.getElementById('loader');
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    var sbClient = null;
+    function getSupabase() {
+      if (!sbClient) {
+        if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined') {
+          throw new Error('config.js를 확인해 주세요. SUPABASE_URL, SUPABASE_ANON_KEY가 필요합니다.');
+        }
+        sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      return sbClient;
+    }
 
-    const SLOTS = ['08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30'];
-    const STORAGE_BUCKET = 'reservation-files';
+    // 08:30 ~ 16:00, 30분 단위
+    const SLOTS = ['08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00'];
 
-    // [1] 날짜 선택 시 예약 가능 시간대 업데이트 (Supabase)
+    const STORAGE_BUCKET = (typeof window !== 'undefined' && window.STORAGE_BUCKET) ? window.STORAGE_BUCKET : 'reservation-files';
+    const DAY_NAMES = ['일','월','화','수','목','금','토'];
+
+    var calViewYear = new Date().getFullYear();
+    var calViewMonth = new Date().getMonth();
+    var selectedDateStr = '';
+
+    function toYMD(y, m, d) {
+      m = m + 1;
+      return y + '-' + (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d;
+    }
+
+    function renderCalendar() {
+      var first = new Date(calViewYear, calViewMonth, 1);
+      var last = new Date(calViewYear, calViewMonth + 1, 0);
+      var startBlank = first.getDay();
+      var daysInMonth = last.getDate();
+      var prevLast = new Date(calViewYear, calViewMonth, 0);
+      var prevDays = prevLast.getDate();
+      var today = new Date();
+      var todayStr = toYMD(today.getFullYear(), today.getMonth(), today.getDate());
+
+      document.getElementById('calTitle').textContent = calViewYear + '년 ' + (calViewMonth + 1) + '월';
+
+      var html = '';
+      for (var i = 0; i < startBlank; i++) {
+        var d = prevDays - startBlank + 1 + i;
+        var y = calViewMonth === 0 ? calViewYear - 1 : calViewYear;
+        var mo = calViewMonth === 0 ? 11 : calViewMonth - 1;
+        var cls = 'cal-day other-month';
+        if (i === 0) cls += ' sun';
+        if (i === 6) cls += ' sat';
+        html += '<span class="' + cls + '" data-ymd="' + toYMD(y, mo, d) + '">' + d + '</span>';
+      }
+      for (var d = 1; d <= daysInMonth; d++) {
+        var ymd = toYMD(calViewYear, calViewMonth, d);
+        var cls = 'cal-day';
+        var isPast = ymd < todayStr;
+        if (isPast) cls += ' disabled';
+        var dayOfWeek = new Date(calViewYear, calViewMonth, d).getDay();
+        if (dayOfWeek === 0) cls += ' sun';
+        if (dayOfWeek === 6) cls += ' sat';
+        if (ymd === todayStr) cls += ' today';
+        if (ymd === selectedDateStr) cls += ' selected';
+        html += '<span class="' + cls + '" data-ymd="' + ymd + '">' + d + '</span>';
+      }
+      var remaining = 42 - (startBlank + daysInMonth);
+      for (var i = 0; i < remaining; i++) {
+        var d = i + 1;
+        var y = calViewMonth === 11 ? calViewYear + 1 : calViewYear;
+        var mo = calViewMonth === 11 ? 0 : calViewMonth + 1;
+        var cls = 'cal-day other-month';
+        if ((startBlank + daysInMonth + i) % 7 === 0) cls += ' sun';
+        if ((startBlank + daysInMonth + i) % 7 === 6) cls += ' sat';
+        html += '<span class="' + cls + '" data-ymd="' + toYMD(y, mo, d) + '">' + d + '</span>';
+      }
+      var el = document.getElementById('calDays');
+      el.innerHTML = html;
+      el.querySelectorAll('.cal-day:not(.disabled)').forEach(function(cell) {
+        cell.addEventListener('click', function() {
+          var ymd = this.dataset.ymd;
+          selectedDateStr = ymd;
+          document.getElementById('date').value = ymd;
+          renderCalendar();
+          updateSlots();
+        });
+      });
+    }
+
+    document.getElementById('calPrev').addEventListener('click', function() {
+      calViewMonth--;
+      if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+      renderCalendar();
+    });
+    document.getElementById('calNext').addEventListener('click', function() {
+      calViewMonth++;
+      if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+      renderCalendar();
+    });
+
+    renderCalendar();
+
+    function formatDateLabel(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr + 'T12:00:00');
+      const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate(), w = d.getDay();
+      return y + '년 ' + (m < 10 ? '0' : '') + m + '월 ' + (day < 10 ? '0' : '') + day + '일 (' + DAY_NAMES[w] + '요일)';
+    }
+
+    // [1] 날짜 선택 시 예약 가능 시간대 조회 후 버튼으로 표시
     async function updateSlots() {
       const date = document.getElementById('date').value;
-      const timeSelect = document.getElementById('time');
+      const dateLabel = document.getElementById('timeSelectDate');
+      const grid = document.getElementById('timeSlots');
+      const hint = document.getElementById('timeSelectHint');
+      const timeInput = document.getElementById('time');
+
+      timeInput.value = '';
+      document.querySelectorAll('.time-slot-btn.selected').forEach(el => el.classList.remove('selected'));
+
       if (!date) {
-        timeSelect.innerHTML = '<option value="">날짜를 먼저 선택하세요</option>';
-        return;
-      }
-      timeSelect.innerHTML = '<option value="">예약 현황 조회 중...</option>';
-
-      const { data, error } = await supabase
-        .from('reservations')
-        .select('time, car1, car2')
-        .eq('date', date)
-        .neq('status', '반려');
-
-      if (error) {
-        timeSelect.innerHTML = '<option value="">조회 오류</option>';
-        alert('데이터 오류: ' + error.message);
+        dateLabel.textContent = '달력에서 방문 예약일을 선택하면 예약 가능한 시간이 표시됩니다';
+        grid.innerHTML = '<span class="time-select-placeholder col-12">← 왼쪽 달력에서 방문 예약일을 선택해 주세요</span>';
+        hint.textContent = '';
         return;
       }
 
-      const occupancy = {};
-      SLOTS.forEach(s => { occupancy[s] = 0; });
-      (data || []).forEach(row => {
-        const t = String(row.time || '').trim().substring(0, 5);
-        if (occupancy[t] !== undefined) {
-          occupancy[t] += (row.car1 ? 1 : 0) + (row.car2 ? 1 : 0);
+      dateLabel.textContent = formatDateLabel(date);
+      grid.innerHTML = '<span class="text-muted">예약 현황 조회 중...</span>';
+      hint.textContent = '';
+
+      try {
+        const sb = getSupabase();
+        const { data, error } = await sb
+          .from('reservations')
+          .select('reservation_time, car_number_1, car_number_2')
+          .eq('reservation_date', date)
+          .neq('status', '반려');
+
+        if (error) {
+          grid.innerHTML = '';
+          hint.textContent = '조회 오류: ' + error.message;
+          hint.classList.add('text-danger');
+          return;
         }
-      });
 
-      const available = SLOTS.filter(s => occupancy[s] < 2);
-      if (available.length === 0) {
-        timeSelect.innerHTML = '<option value="">해당 날짜는 예약이 마감되었습니다</option>';
-      } else {
-        timeSelect.innerHTML = '<option value="">시간 선택</option>' + available.map(s => `<option value="${s}">${s}</option>`).join('');
+        const occupancy = {};
+        SLOTS.forEach(s => { occupancy[s] = 0; });
+        (data || []).forEach(row => {
+          const t = String(row.reservation_time || '').trim().substring(0, 5);
+          if (occupancy[t] !== undefined) {
+            occupancy[t] += (row.car_number_1 ? 1 : 0) + (row.car_number_2 ? 1 : 0);
+          }
+        });
+
+        const available = SLOTS.filter(s => occupancy[s] < 2);
+        grid.innerHTML = '';
+
+        if (available.length === 0) {
+          hint.textContent = '해당 날짜는 예약이 마감되었습니다.';
+          hint.classList.add('text-danger');
+          return;
+        }
+
+        hint.textContent = '예약 가능한 시간을 선택하세요. (타임당 최대 2대)';
+        hint.classList.remove('text-danger');
+
+        available.forEach(s => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'time-slot-btn';
+          btn.textContent = s;
+          btn.dataset.time = s;
+          btn.addEventListener('click', function () {
+            document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            timeInput.value = s;
+          });
+          grid.appendChild(btn);
+        });
+      } catch (e) {
+        grid.innerHTML = '';
+        hint.textContent = '연결 오류: ' + (e.message || e);
+        hint.classList.add('text-danger');
       }
     }
 
@@ -258,10 +458,11 @@
         const contact = form.contact.value.trim();
 
         // 1일 1회 제한: 해당 날짜+연락처로 대기/승인 건 조회
-        const { data: existing } = await supabase
+        const sb = getSupabase();
+        const { data: existing } = await sb
           .from('reservations')
           .select('id')
-          .eq('date', date)
+          .eq('reservation_date', date)
           .eq('contact', contact)
           .neq('status', '반려');
         if (existing && existing.length > 0) {
@@ -287,29 +488,28 @@
         for (let i = 0; i < 3; i++) {
           const file = files[i];
           const path = `${reservationId}/file${i + 1}${getExt(file)}`;
-          const { error: uploadErr } = await supabase.storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
+          const { error: uploadErr } = await sb.storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
           if (uploadErr) {
             loader.style.display = 'none';
             alert('서류 업로드 오류: ' + uploadErr.message);
             return;
           }
-          const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+          const { data: urlData } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
           fileUrls.push(urlData.publicUrl);
         }
 
-        const { error: insertErr } = await supabase.from('reservations').insert({
-          id: reservationId,
-          date,
-          time: form.time.value,
-          company: form.company.value.trim(),
-          car1: form.car1.value.trim(),
-          car2: (form.car2.value || '').trim() || null,
-          material: form.material.value.trim(),
+        const { error: insertErr } = await sb.from('reservations').insert({
+          reservation_date: date,
+          reservation_time: form.time.value,
+          company_name: form.company.value.trim(),
+          car_number_1: form.car1.value.trim(),
+          car_number_2: (form.car2.value || '').trim() || null,
+          material_info: form.material.value.trim(),
           contact,
-          people: form.people.value.trim(),
-          file1_url: fileUrls[0],
-          file2_url: fileUrls[1],
-          file3_url: fileUrls[2],
+          person_info: { text: form.people.value.trim() },
+          doc_url_1: fileUrls[0],
+          doc_url_2: fileUrls[1],
+          doc_url_3: fileUrls[2],
           status: '대기'
         });
 
@@ -328,6 +528,10 @@
         alert('처리 중 오류가 발생했습니다: ' + (e.message || e));
       }
     }
+
+    window.updateSlots = updateSlots;
+    window.handleFormSubmit = handleFormSubmit;
+    })();
   </script>
 </body>
 </html>

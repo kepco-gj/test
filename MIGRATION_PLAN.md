@@ -15,7 +15,7 @@
 | id | uuid (PK, default gen_random_uuid()) | 예약 고유 ID |
 | created_at | timestamptz (default now()) | 신청 시각 |
 | date | date | 예약일 |
-| time | text | 시간 (예: "08:30") |
+| visit_time | text | 시간 (예: "08:30") |
 | company | text | 업체명 |
 | car1 | text | 차량번호1 |
 | car2 | text | 차량번호2 (nullable) |

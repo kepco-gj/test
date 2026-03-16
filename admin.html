@@ -84,7 +84,7 @@
     <h4 class="fw-bold mb-3">관리자 인증</h4>
     <p class="text-muted small mb-4">보안을 위해 관리자 암호를 입력해 주세요.</p>
     <input type="password" id="adminPw" placeholder="Access Password">
-    <button class="btn-login shadow-sm" onclick="attemptLogin()">현황 대시보드 접속</button>
+    <button type="button" class="btn-login shadow-sm" onclick="attemptLogin()">현황 대시보드 접속</button>
   </div>
 
   <div id="calendar-container">
@@ -139,7 +139,11 @@
           </div>
         </div>
         <div class="modal-footer border-0">
-          <button type="button" class="btn btn-secondary w-100 fw-bold py-2" data-bs-dismiss="modal">닫기</button>
+          <div class="d-flex flex-column flex-md-row w-100 gap-2">
+            <button type="button" id="btnApprove" class="btn btn-primary w-100 fw-bold py-2">승인</button>
+            <button type="button" id="btnReject" class="btn btn-outline-danger w-100 fw-bold py-2">반려</button>
+          </div>
+          <button type="button" class="btn btn-secondary w-100 fw-bold py-2 mt-2" data-bs-dismiss="modal">닫기</button>
         </div>
       </div>
     </div>
@@ -149,7 +153,18 @@
   <script src="config.js"></script>
   <script>
     const resModal = new bootstrap.Modal(document.getElementById('eventModal'));
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    var sbClient = null;
+    var currentEvent = null;
+
+    function getSupabase() {
+      if (!sbClient) {
+        if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined') {
+          throw new Error('config.js를 확인해 주세요. SUPABASE_URL, SUPABASE_ANON_KEY가 필요합니다.');
+        }
+        sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      return sbClient;
+    }
 
     function formatPhoneNumber(num) {
       if (!num) return "-";
@@ -160,11 +175,19 @@
     }
 
     function attemptLogin() {
+      if (typeof ADMIN_PASSWORD === 'undefined') {
+        alert('config.js가 로드되지 않았거나 ADMIN_PASSWORD가 없습니다. 같은 폴더에 config.js가 있는지 확인해 주세요.');
+        return;
+      }
       const pw = document.getElementById('adminPw').value;
       if (pw === ADMIN_PASSWORD) {
         document.getElementById('login-box').style.display = 'none';
         document.getElementById('calendar-container').style.display = 'block';
-        initCalendar();
+        try {
+          initCalendar();
+        } catch (e) {
+          alert('캘린더 로드 오류: ' + (e.message || e));
+        }
       } else {
         alert("암호가 일치하지 않습니다.");
       }
@@ -179,9 +202,9 @@
         eventOrder: 'start',
         dayMaxEvents: true,
         events: async function(info, successCallback, failureCallback) {
-          const { data, error } = await supabase
+          const { data, error } = await getSupabase()
             .from('reservations')
-            .select('id, date, time, company, car1, car2, material, contact, people, file1_url, file2_url, file3_url, status')
+            .select('id, reservation_date, reservation_time, company_name, car_number_1, car_number_2, material_info, contact, person_info, doc_url_1, doc_url_2, doc_url_3, status')
             .neq('status', '반려');
           if (error) {
             alert("데이터 로드 오류: " + error.message);
@@ -189,28 +212,30 @@
             return;
           }
           const events = (data || []).map(row => {
-            const dateStr = (row.date && String(row.date).substring(0, 10)) || '';
-            const timeStr = (row.time && String(row.time).trim().substring(0, 5)) || '09:00';
+            const dateStr = (row.reservation_date && String(row.reservation_date).substring(0, 10)) || '';
+            const timeStr = (row.reservation_time && String(row.reservation_time).trim().substring(0, 5)) || '09:00';
             const startISO = dateStr + 'T' + timeStr + ':00';
+            const peopleText = row.person_info && (row.person_info.text != null ? row.person_info.text : (typeof row.person_info === 'string' ? row.person_info : JSON.stringify(row.person_info)));
             return {
               id: row.id,
-              title: row.company,
+              title: row.company_name,
               start: startISO,
               color: row.status === '승인' ? '#004795' : '#f39c12',
               extendedProps: {
-                company: row.company,
-                cars: [row.car1, row.car2].filter(Boolean).join(' / '),
-                material: row.material,
+                company: row.company_name,
+                cars: [row.car_number_1, row.car_number_2].filter(Boolean).join(' / '),
+                material: row.material_info,
                 contact: row.contact,
-                people: row.people,
+                people: peopleText || '-',
                 status: row.status || '대기',
-                files: [row.file1_url, row.file2_url, row.file3_url]
+                files: [row.doc_url_1, row.doc_url_2, row.doc_url_3]
               }
             };
           });
           successCallback(events);
         },
         eventClick: function(info) {
+          currentEvent = info.event;
           const p = info.event.extendedProps;
           const status = p.status || '대기';
           const timeValue = info.event.startStr && info.event.startStr.includes('T')
@@ -238,14 +263,62 @@
               fileContainer.appendChild(a);
             }
           });
+
+          // 승인/반려 버튼 상태 업데이트
+          const approveBtn = document.getElementById('btnApprove');
+          const rejectBtn = document.getElementById('btnReject');
+          approveBtn.disabled = (status === '승인');
+          rejectBtn.disabled = (status === '반려');
           resModal.show();
         }
       });
       calendar.render();
     }
 
+    async function updateReservationStatus(newStatus, confirmText) {
+      if (!currentEvent) return;
+      if (!window.confirm(confirmText)) return;
+
+      try {
+        const sb = getSupabase();
+        const { error } = await sb
+          .from('reservations')
+          .update({ status: newStatus })
+          .eq('id', currentEvent.id);
+
+        if (error) {
+          alert('상태 변경 오류: ' + error.message);
+          return;
+        }
+
+        // 이벤트 색상 및 모달 상태 즉시 반영
+        const newColor = newStatus === '승인' ? '#004795' : (newStatus === '반려' ? '#e74c3c' : '#f39c12');
+        currentEvent.setExtendedProp('status', newStatus);
+        currentEvent.setProp('color', newColor);
+
+        const statusBadge = document.getElementById('viewStatus');
+        statusBadge.innerText = newStatus;
+        statusBadge.className = 'badge ' + (newStatus === '승인' ? 'bg-primary' : (newStatus === '반려' ? 'bg-danger' : 'bg-warning text-dark'));
+
+        const approveBtn = document.getElementById('btnApprove');
+        const rejectBtn = document.getElementById('btnReject');
+        approveBtn.disabled = (newStatus === '승인');
+        rejectBtn.disabled = (newStatus === '반려');
+      } catch (e) {
+        alert('상태 변경 중 예외가 발생했습니다: ' + (e.message || e));
+      }
+    }
+
     document.getElementById('adminPw').addEventListener('keypress', function(e) {
       if (e.key === 'Enter') attemptLogin();
+    });
+
+    document.getElementById('btnApprove').addEventListener('click', function () {
+      updateReservationStatus('승인', '이 예약을 승인하시겠습니까?');
+    });
+
+    document.getElementById('btnReject').addEventListener('click', function () {
+      updateReservationStatus('반려', '이 예약을 반려하시겠습니까?');
     });
   </script>
 </body>
